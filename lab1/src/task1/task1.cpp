@@ -69,7 +69,7 @@ void Task1::task1b(std::vector<std::string>& files)
     std::vector<std::thread> threads;
     for (size_t i = 0; i < files.size(); ++i)
     {
-        threads.push_back(std::thread(makeUppercaseCopy, std::ref(files), i, i + 1));
+        threads.emplace_back(makeUppercaseCopy, std::ref(files), i, i + 1);
     }
 
     for (size_t i = 0; i < files.size(); ++i)

@@ -8,6 +8,7 @@ file(GLOB SRC "src/*.cpp"
     "src/task1/*.cpp"
     "src/task3/*.cpp"
     "src/task5/*.cpp"
+    "src/task6/*.cpp"
 )
 add_executable(${PROJECT_NAME} ${SRC})
 
