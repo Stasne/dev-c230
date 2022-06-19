@@ -1,3 +1,5 @@
+#ifndef __TASK3_H__
+#define __TASK3_H__
 
 class Task3
 {
@@ -8,3 +10,5 @@ public:
 
 private:
 };
+
+#endif // __TASK3_H__
