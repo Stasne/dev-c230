@@ -12,11 +12,9 @@ void yell_async(std::stop_token stoken, std::string_view msg, std::mutex& m)
     uint64_t cnt{ 0 };
     while (not stoken.stop_requested())
     {
-        std::unique_lock<std::mutex> lk(m);
-        std::cout << "Id: " << th_id << " msg: " << msg << std::endl;
-        lk.unlock();
         ++cnt;
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::lock_guard<std::mutex> lk(m);
+        std::cout << "Id: " << th_id << " msg: " << msg << std::endl;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(20)); // Чтоб остальные потоки закончили выводить свои крики
     std::lock_guard<std::mutex> lk(m);
