@@ -1,5 +1,5 @@
-#ifndef __TASK5_H__
-#define __TASK5_H__
+#ifndef __TASK4_H__
+#define __TASK4_H__
 
 class Task4
 {
@@ -9,4 +9,4 @@ public:
     void operator()();
 };
 
-#endif /* __TASK5_H__ */
+#endif /* __TASK4_H__ */

@@ -3,14 +3,14 @@
 #include <algorithm>
 #include <random>
 
+template <typename T>
 class RandomGenerator
 {
 public:
-    template <typename T>
     static T take()
     {
         static std::random_device               rnd_device;
-        static std::mt19937                     mersenne_engine{ rnd_device() }; // Generates random integers
+        static std::mt19937                     mersenne_engine{ rnd_device() };
         static std::uniform_int_distribution<T> dist{ std::numeric_limits<T>::min(), std::numeric_limits<T>::max() };
         return dist(mersenne_engine);
     }

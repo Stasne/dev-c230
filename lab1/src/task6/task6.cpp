@@ -64,8 +64,8 @@ void Task6::operator()()
     std::vector<uint32_t> data(NUM_COUNT);
 
     // fill with randoms
-    std::generate(data.begin(), data.end(), [&]() { return RandomGenerator::take<uint32_t>(); });
-    const uint32_t VAL2FIND = RandomGenerator::take<uint32_t>(); // data[43];
+    std::generate(data.begin(), data.end(), [&]() { return RandomGenerator<uint32_t>::take(); });
+    const uint32_t VAL2FIND = RandomGenerator<uint32_t>::take(); // data[43];
 
     std::cout << std::dec << "FINDING: " << VAL2FIND << std::endl;
 
