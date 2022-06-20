@@ -10,14 +10,18 @@
 
 namespace multithread
 {
-    int64_t find(uint32_t val, const std::vector<uint32_t>& data, size_t thread_count = std::thread::hardware_concurrency())
+
+    // TODO: do Iterators as parameters (as Task4)
+    template <typename T>
+    int64_t find(T val, const std::vector<T>& data, size_t thread_count = std::thread::hardware_concurrency())
     {
         // TODO: std::ranges - can we use it to pass vector's intervals to threads?
         std::vector<std::jthread> threads;
-        int64_t                   res{ -1 };
-        std::mutex                mutex;
-        std::stop_source          ss;
-        size_t                    groupSize = data.size() / thread_count;
+        threads.reserve(thread_count);
+        int64_t          res{ -1 };
+        std::mutex       mutex; // shall be before threads (to not let be destroyed before threads)
+        std::stop_source ss;
+        size_t           groupSize = data.size() / thread_count;
 
         auto intervalFind = [&](size_t start, size_t end) {
             if (end > data.size())
@@ -39,6 +43,7 @@ namespace multithread
                     ss.request_stop();
                     std::cout << std::this_thread::get_id() << ": Found value " << val << " at index " << i << "\n\tset request_stop()" << std::endl;
                     res = i;
+                    return;
                 }
             }
         };
@@ -47,9 +52,11 @@ namespace multithread
         {
             size_t lastIndex = i == thread_count - 1 ? data.size() : groupSize * (i + 1);
             threads.emplace_back(intervalFind, i * groupSize, (lastIndex));
-        }
-        for (auto& th : threads)
-            th.join();
+        } // shall i do last group in main thread?
+
+        // check if we'll crash cuz mutex destructor will invoke before jthreads join
+        // for (auto& th : threads)
+        //     th.join();
 
         return res;
     }
@@ -59,7 +66,7 @@ void Task6::operator()()
 {
     std::cout << "Task 6" << std::endl;
 
-    const size_t NUM_COUNT = 200000000; // 0000;
+    const size_t NUM_COUNT = 2000000; // 0000;
 
     std::vector<uint32_t> data(NUM_COUNT);
 
@@ -71,7 +78,7 @@ void Task6::operator()()
 
     auto start = std::chrono::steady_clock::now(); // timer start
 
-    auto found = multithread::find(VAL2FIND, data);
+    auto found = multithread::find(VAL2FIND, data, 100);
 
     auto end = std::chrono::steady_clock::now(); // timer stop
 
