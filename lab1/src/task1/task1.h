@@ -1,8 +1,8 @@
 #ifndef __TASK1_H__
 #define __TASK1_H__
 #include <iosfwd>
+#include <string_view>
 #include <vector>
-
 class Task1
 {
 public:

@@ -7,83 +7,59 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <thread>
 #include <vector>
 
 namespace fs = std::filesystem;
-void makeUppercaseCopy(std::vector<std::string>& files, size_t from = 0, size_t to = 1)
+
+void makeUppercaseCopy(const std::string& file)
 {
-    assert(files.size() >= to);
-    assert(from < to);
     const static std::string COPY_PREFIX{ "uc_" };
+    std::string              outputFilename{ "out/" + std::string(file) };
+    outputFilename.replace(outputFilename.find_last_of('/'), 1, '/' + COPY_PREFIX);
 
-    std::ifstream reader;
-    std::ofstream writer;
+    std::ifstream reader(file.data());
+    std::ofstream writer(outputFilename, std::ios_base::trunc);
+    std::transform(std::istreambuf_iterator<char>(reader), std::istreambuf_iterator<char>(),
+                   std::ostreambuf_iterator<char>(writer), toupper);
+}
 
-    auto readToBuff = [&](const std::string& filename) -> std::vector<char> {
-        reader.open(filename.data(), std::ios_base::in);
-        if (reader.fail())
-        {
-            std::cerr << "Failed to open file for reading" << filename << std::endl;
-        }
-        std::vector<char> buff((std::istreambuf_iterator<char>(reader)), std::istreambuf_iterator<char>());
-        reader.close();
-        return buff;
-    };
-
-    auto writeToFile = [&](const std::vector<char>& buff, const std::string& filename) {
-        writer.open(filename, std::ios_base::trunc);
-        if (writer.fail())
-        {
-            std::cerr << "Failed to open file for writing" << filename << std::endl;
-        }
-        writer.write(buff.data(), buff.size());
-        writer.close();
-    };
-
+void makeUppercaseCopy_interval(const std::vector<std::string>& files, size_t from, size_t to)
+{
     for (size_t i = from; i < to; ++i)
     {
-        // read
-        auto buff = readToBuff(files[i]);
-        // transform
-        std::transform(buff.begin(), buff.end(), buff.begin(), ::toupper);
-        // redirect + rename
-        std::string outputFilename{ "out/" + files[from] };
-        outputFilename.replace(outputFilename.find_last_of('/'), 1, '/' + COPY_PREFIX);
-        // write
-        writeToFile(buff, outputFilename);
+        makeUppercaseCopy(files[i]);
     }
 }
 
-void Task1::task1a(std::vector<std::string>& files) // why can't const?
+void Task1::task1a(std::vector<std::string>& files)
 {
-    for (size_t i = 0; i < files.size(); ++i)
+    for (const auto& file : files)
     {
-        std::thread t{ makeUppercaseCopy, std::ref(files), i, i + 1 };
+        std::thread t{ makeUppercaseCopy, std::ref(file) };
         t.join();
     }
 }
 void Task1::task1b(std::vector<std::string>& files)
 {
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < files.size(); ++i)
-    {
-        threads.emplace_back(makeUppercaseCopy, std::ref(files), i, i + 1);
-    }
+    threads.reserve(files.size());
+    for (const auto file : files)
+        threads.emplace_back(makeUppercaseCopy, std::ref(file));
 
-    for (size_t i = 0; i < files.size(); ++i)
-        threads[i].join();
+    for (auto& th : threads)
+        th.join();
 }
 void Task1::task1c(std::vector<std::string>& files)
 {
     const uint64_t T_COUNT = std::thread::hardware_concurrency();
 
-    // std::cout << "\t threads count: " << T_COUNT << std::endl;
     size_t groupSize = files.size() / T_COUNT;
 
-    // auto                     start = std::chrono::steady_clock::now();
     std::vector<std::thread> threads;
+    threads.reserve(T_COUNT);
     for (size_t i = 0; i < T_COUNT; ++i)
     {
         size_t lastIndex{ 0 };
@@ -92,7 +68,7 @@ void Task1::task1c(std::vector<std::string>& files)
         else
             lastIndex = i * groupSize + groupSize + 1;
 
-        threads.push_back(std::thread(makeUppercaseCopy, std::ref(files), i * groupSize, lastIndex));
+        threads.emplace_back(std::thread(makeUppercaseCopy_interval, std::ref(files), i * groupSize, lastIndex));
     }
 
     for (size_t i = 0; i < T_COUNT; ++i)
@@ -109,7 +85,7 @@ void Task1::operator()()
         // if file extension is not .txt, skip it
         if (entry.path().extension() != ".txt")
             continue;
-        files.push_back(entry.path());
+        files.push_back(entry.path().c_str());
     }
 
     auto funcWrapper = [&](std::function<void(std::vector<std::string>&)> func) {
@@ -122,7 +98,7 @@ void Task1::operator()()
     };
 
     std::cout << "1.a. sequential" << std::endl;
-    funcWrapper(std::bind(&Task1::task1a, this, std::placeholders::_1)); // confusing
+    funcWrapper(std::bind(&Task1::task1a, this, std::placeholders::_1));
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::cout << "1.b. simultaneously" << std::endl;
     funcWrapper(std::bind(&Task1::task1b, this, std::placeholders::_1));
