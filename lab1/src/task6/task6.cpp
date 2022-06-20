@@ -6,6 +6,8 @@
 #include <thread>
 #include <vector>
 
+#include "random_generator.h"
+
 namespace multithread
 {
     int64_t find(uint32_t val, const std::vector<uint32_t>& data, size_t thread_count = std::thread::hardware_concurrency())
@@ -60,13 +62,11 @@ void Task6::operator()()
     const size_t NUM_COUNT = 200000000; // 0000;
 
     std::vector<uint32_t> data(NUM_COUNT);
-    // fill with randoms
-    std::random_device                      rnd_device;
-    std::mt19937                            mersenne_engine{ rnd_device() }; // Generates random integers
-    std::uniform_int_distribution<uint32_t> dist{ std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max() };
-    std::generate(data.begin(), data.end(), [&]() { return dist(mersenne_engine); });
 
-    const uint32_t VAL2FIND = dist(mersenne_engine);
+    // fill with randoms
+    std::generate(data.begin(), data.end(), [&]() { return RandomGenerator::take<uint32_t>(); });
+    const uint32_t VAL2FIND = RandomGenerator::take<uint32_t>(); // data[43];
+
     std::cout << std::dec << "FINDING: " << VAL2FIND << std::endl;
 
     auto start = std::chrono::steady_clock::now(); // timer start
@@ -76,10 +76,10 @@ void Task6::operator()()
     auto end = std::chrono::steady_clock::now(); // timer stop
 
     if (found >= 0)
-        std::cout << "Found[" << found << "] = " << data[found] << std::endl;
+        std::cout << std::dec << "Found[" << found << "] = " << data[found] << std::endl;
     else
         std::cout << "Not found" << std::endl;
-    // Время считает не верно!!!!!!!!!!!!!!
+
     auto s  = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
