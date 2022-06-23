@@ -12,7 +12,7 @@
 std::mutex mutex;
 void Task3::operator()()
 {
-    const size_t              ThreadsCount{ 5 };
+    constexpr const size_t    ThreadsCount{ 5 };
     std::vector<std::jthread> threads;
     for (size_t i = 0; i < ThreadsCount; ++i)
     {

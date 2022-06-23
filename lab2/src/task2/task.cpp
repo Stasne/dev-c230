@@ -25,8 +25,8 @@ void PingPongPlayer(std::stop_token referee, std::string_view yell)
 }
 void Task2::operator()()
 {
-    std::stop_source ss;
-    const size_t     PlayersCount{ 2 };
+    std::stop_source       ss;
+    constexpr const size_t PlayersCount{ 2 };
 
     std::vector<std::jthread> players;
     players.reserve(PlayersCount);
