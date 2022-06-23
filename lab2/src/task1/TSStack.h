@@ -8,9 +8,17 @@ class TSStack
 public:
     TSStack(size_t capacity = 200)
         : data_(capacity){};
-    TSStack(const TSStack<T>& other);
+    TSStack(const TSStack<T>& other)
+    {
+        std::lock_guard<std::mutex> lk(other.m_);
+        data_ = other.data_;
+    };
     TSStack(const TSStack<T>&& other) = delete;
-    TSStack<T>& operator=(const TSStack<T>& other);
+    TSStack<T>& operator=(const TSStack<T>& other)
+    {
+        std::lock(m_, other.m_);
+        data_ = other.data_;
+    };
 
     ~TSStack() = default;
     void push(T value)
