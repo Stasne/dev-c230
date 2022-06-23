@@ -12,9 +12,9 @@ thread_local std::string wilkommen{ "Howdy ho? " };
 void ConcatAndOut(const std::string& str)
 {
     auto out = std::osyncstream(std::cout);
+    out << str << " before & : " << &wilkommen << std::endl;
     wilkommen += str;
-    out << wilkommen << std::endl; // outs at destructor
-    // std::cout << wilkommen << std::endl;
+    out << str << " after & : " << &wilkommen << std::endl; // outs at destructor
 }
 void Task4::operator()()
 {
