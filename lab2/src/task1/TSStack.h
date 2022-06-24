@@ -11,9 +11,18 @@ public:
     TSStack(const TSStack<T>& other)
     {
         std::lock_guard<std::mutex> lk(other.m_);
-        data_ = other.data_;
+        data_     = other.data_;
+        size_     = other.size_;
+        capacity_ = other.capacity_;
     };
-    TSStack(const TSStack<T>&& other) = delete;
+    TSStack(const TSStack<T>&& other)
+    // : data_(other_.data_) //??????
+    {
+        std::lock_guard<std::mutex> lk(other.m_); // required?
+        data_.swap(other.data_);
+        size_     = other.size_;
+        capacity_ = other.capacity_;
+    };
     TSStack<T>& operator=(const TSStack<T>& other)
     {
         std::lock(m_, other.m_);
@@ -53,6 +62,8 @@ public:
 
 private:
     std::vector<T>     data_;
+    size_t             size_;
+    size_t             capacity_;
     mutable std::mutex m_;
 };
 
