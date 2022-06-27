@@ -9,7 +9,8 @@ file(GLOB SRC "src/*.cpp"
 
     "src/task2/*.cpp"
 
-    # "src/task3/*.cpp"
+    "src/task3/*.cpp"
+
     # "src/task4/*.cpp"
     # "src/task5/*.cpp"
 )
