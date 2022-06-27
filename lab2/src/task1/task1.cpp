@@ -68,9 +68,6 @@ void Task1::operator()()
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::jthread consumer(consumerThread<stype>, std::ref(stack), std::ref(stopper));
 
-    // int a{ 0 };
-    // std::cin.get();
-    // stopper.request_stop();
     consumer.join();
     for (auto& ex : Exceptions)
     {
