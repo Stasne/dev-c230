@@ -32,6 +32,7 @@ std::string RandomString(const int len)
 
     return tmp_s;
 }
+
 void PrintRandomString(ostream& stream)
 {
     stream << this_thread::get_id() << "str: " << RandomString(10) << '\n';
