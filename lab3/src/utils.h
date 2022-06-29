@@ -8,9 +8,7 @@
 
 namespace utils
 {
-    // template <typename... T>
-    // void time(std::function<void(T... args)> args)
-    void time(std::function<void()> func)
+    static void time(std::function<void()> func)
     {
         auto start = std::chrono::steady_clock::now();
         func();

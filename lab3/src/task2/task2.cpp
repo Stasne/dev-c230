@@ -18,7 +18,9 @@ void Task2::operator()()
         auto fut = std::async(std::launch::async, []() {
             std::string str;
             std::getline(std::cin, str);
-            std::cout << "got: " << str << std::endl;
+            int result = std::stoi(str);
+            if (result != std::stof(str))
+                throw std::runtime_error("Float NUMBER");
             return std::stoi(str);
         });
         try
