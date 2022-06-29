@@ -18,24 +18,23 @@ public:
     };
     TSStack(TSStack<T>&& other)
     {
-        std::lock_guard<std::shared_mutex> lk(other.m_); // required?
+        std::lock_guard<std::shared_mutex> lk(other.m_);
         data_.swap(other.data_);
         size_ = other.size_;
     };
     TSStack<T>& operator=(const TSStack<T>& other)
     {
-        // shared_mutex
         std::unique_lock<std::shared_mutex> lk(m_, std::defer_lock);
         std::shared_lock                    shlk(other.m_, std::defer_lock);
-        // wrap mutexes
         std::lock(lk, shlk);
         data_ = other.data_;
     };
     // move operator=()
     TSStack<T>& operator=(TSStack<T>&& other)
     {
-        std::lock_guard<std::shared_mutex> shlk(other.m_);
+        std::lock(m_, other.m_);
         data_.swap(other.data_);
+        // unlock mitexes;
     }
 
     ~TSStack() = default;
@@ -57,7 +56,7 @@ public:
         std::lock_guard<std::shared_mutex> lk(m_);
         if (data_.empty())
             throw std::runtime_error("Attemptimg to pop from empty stack");
-        T top = std::move_if_noexcept(data_.back()); // rework to -> if no except
+        T top = std::move_if_noexcept(data_.back());
         data_.pop_back();
         return top;
     };

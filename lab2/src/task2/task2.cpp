@@ -6,12 +6,9 @@
 #include <string_view>
 #include <thread>
 #include <vector>
-// std::vector<std::counting_semaphore<1>> sems;
-// sems.emplace_back(0);
-// sems.emplace_back(1);
-std::counting_semaphore<1> Sping(1);
+
+std::counting_semaphore<1> Sping(0);
 std::counting_semaphore<1> Spong(0);
-std::counting_semaphore<1> S(1);
 
 auto speed = std::chrono::milliseconds(400);
 auto acc   = std::chrono::milliseconds(10);
@@ -36,7 +33,7 @@ void Task2::operator()()
 
     players.emplace_back(PingPongPlayer, std::ref(Sping), std::ref(Spong), ss.get_token(), "ping");
     players.emplace_back(PingPongPlayer, std::ref(Spong), std::ref(Sping), ss.get_token(), "pong");
-
+    Sping.release();
     std::cin.get();
     ss.request_stop();
 }
