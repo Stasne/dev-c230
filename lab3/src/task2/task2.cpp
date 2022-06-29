@@ -10,8 +10,6 @@
 
 void Task2::operator()()
 {
-    // WIP
-
     std::future<int> res;
     while (true)
     {
