@@ -57,6 +57,7 @@ void ThreadPool::push_task(std::packaged_task<TaskType>& task)
 
 void ThreadPool::stop() const
 {
+    std::cout << "thread pool stop\n";
     ss_.request_stop();
     cv_.notify_all();
 }
