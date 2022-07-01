@@ -3,7 +3,6 @@
 #include <iostream>
 #include <syncstream>
 
-std::osyncstream osync(std::cout);
 ThreadPool::ThreadPool(size_t count)
 {
     threads_.reserve(count);
@@ -19,8 +18,8 @@ ThreadPool::~ThreadPool()
 void ThreadPool::poller()
 {
     thread_local size_t counter = 0;
-
-    while (not ss_.stop_requested())
+    auto                st      = ss_.get_token();
+    while (not st.stop_requested())
     {
         std::unique_lock<std::mutex> lk(m_queue_);
         if (not tasks_.empty())
@@ -33,10 +32,11 @@ void ThreadPool::poller()
             lk.lock();
         }
         cv_.wait(lk, [&] {
-            return !tasks_.empty() || ss_.stop_requested();
+            return (!tasks_.empty() || st.stop_requested());
         });
     }
-    osync << std::this_thread::get_id() << ": made " << std::dec << counter << " tasks\n";
+    // std::osyncstream osync(std::cout);
+    // std::cout << std::this_thread::get_id() << ": made " << std::dec << counter << " tasks\n";
 }
 std::future<void> ThreadPool::push_task(std::packaged_task<TaskType>&& task)
 {
@@ -45,7 +45,7 @@ std::future<void> ThreadPool::push_task(std::packaged_task<TaskType>&& task)
     auto fut = task.get_future();
     tasks_.emplace_back(std::move(task));
     cv_.notify_one();
-    return std::move(fut);
+    return fut; // auto-move
 }
 
 void ThreadPool::push_task(std::packaged_task<TaskType>& task)
@@ -57,7 +57,6 @@ void ThreadPool::push_task(std::packaged_task<TaskType>& task)
 
 void ThreadPool::stop() const
 {
-    std::cout << "thread pool stop\n";
     ss_.request_stop();
     cv_.notify_all();
 }

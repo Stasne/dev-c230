@@ -18,59 +18,59 @@
 
 using namespace std;
 
-static atomic<int> cnt;
-void               dummyTask()
+void dummyTask(std::ostream& out)
 {
-    std::vector<int> vec;
-    vec.reserve(50000);
-    std::generate(vec.begin(), vec.end(), utils::rand<int>);
-    std::transform(vec.begin(), vec.end(), vec.begin(), [](auto& el) { return el % 3789; });
-    ++cnt;
+    std::vector<unsigned> vec;
+    vec.reserve(500000000);
+    std::generate(vec.begin(), vec.end(), utils::rand<unsigned>);
+    std::transform(vec.begin(), vec.end(), vec.begin(), [](auto& el) { return (el * 792 + 523); });
 }
 void Task6::operator()()
 {
     cout << "Task 6 " << std::endl;
-
-    constexpr size_t               TaskCount{ 10000 };
+    constexpr size_t               TaskCount{ 1000 };
     std::vector<std::future<void>> results;
     results.reserve(TaskCount);
 
-    // WHY I CANT ??
-    /*
-    std::packaged_task<void(void)> task(dummyTask);
-    auto                           fut = task.get_future();
-    pool.push_task(std::ref(task));
-    task.reset();
-    */
-
-    //Простой последовательный запуск
-    auto sequencedExec = [&] {
-        for (size_t i = 0; i < TaskCount; ++i)
-            dummyTask();
-    };
-    utils::time(sequencedExec);
+    // Простой последовательный запуск
+    {
+        std::osyncstream out(std::cout);
+        auto             sequencedExec = [&] {
+            for (size_t i = 0; i < TaskCount; ++i)
+                dummyTask(std::ref(out));
+        };
+        out << "seq:";
+        utils::time(sequencedExec, out);
+    }
     // Запуск в тредпуле
-    auto tpoolExec = [&]() {
-        ThreadPool pool(std::thread::hardware_concurrency());
-        for (size_t i = 0; i < TaskCount; ++i)
-        {
-            results.emplace_back(pool.push_task(std::packaged_task<void(void)>(dummyTask)));
-            std::cout << ".";
-        }
-        for (auto& res : results)
-            res.wait();
-    };
-    utils::time(tpoolExec);
+    {
+        std::osyncstream out(std::cout);
+        auto             tpoolExec = [&]() {
+            ThreadPool pool(std::thread::hardware_concurrency());
+            for (size_t i = 0; i < TaskCount; ++i)
+            {
+                results.emplace_back(pool.push_task(std::packaged_task<void(void)>([&] { dummyTask(std::ref(out)); })));
+            }
+            for (auto& res : results)
+                res.wait();
+        };
+        out << "pool:";
+        utils::time(tpoolExec, out);
+    }
 
-    // Запуск с помощью std::async
-    results.clear();
-    auto asyncExec = [&]() {
-        for (size_t i = 0; i < TaskCount; ++i)
-        {
-            results.emplace_back(std::async(std::launch::async, dummyTask));
-        }
-        for (auto& res : results)
-            res.wait();
-    };
-    utils::time(asyncExec);
+    // // Запуск с помощью std::async
+    {
+        results.clear();
+        std::osyncstream out(std::cout);
+        auto             asyncExec = [&]() {
+            for (size_t i = 0; i < TaskCount; ++i)
+            {
+                results.emplace_back(std::async(std::launch::async, [&] { dummyTask(std::ref(out)); }));
+            }
+            for (auto& res : results)
+                res.wait();
+        };
+        out << "async:";
+        utils::time(asyncExec, out);
+    }
 }

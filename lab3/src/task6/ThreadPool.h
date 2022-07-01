@@ -11,10 +11,10 @@ class ThreadPool
 public:
     ThreadPool(size_t threadCount);
     ~ThreadPool();
-    ThreadPool(const ThreadPool& other)            = delete;
-    ThreadPool(ThreadPool&& other)                 = delete;
+    ThreadPool(const ThreadPool& other) = delete;
+    // ThreadPool(ThreadPool&& other)                 = delete;
     ThreadPool& operator=(const ThreadPool& other) = delete;
-    ThreadPool& operator=(ThreadPool other)        = delete;
+    // ThreadPool& operator=(ThreadPool&& other)        = delete;
 
     using TaskType = void(void);
     [[nodiscard]] std::future<void> push_task(std::packaged_task<TaskType>&&);

@@ -8,14 +8,14 @@
 
 namespace utils
 {
-    static void time(std::function<void()> func)
+    static void time(std::function<void()> func, std::ostream& out = std::cout)
     {
         auto start = std::chrono::steady_clock::now();
         func();
         auto end = std::chrono::steady_clock::now();
         auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         auto us  = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        std::cout << "\t Elapsed: " << ms << "ms " << us % 1000 << "us" << std::endl;
+        out << "\t Elapsed: " << ms << " ms, " << us % 1000 << " us" << std::endl;
     };
 
     template <typename T>

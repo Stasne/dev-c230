@@ -14,7 +14,6 @@
 #include <vector>
 
 using namespace std;
-osyncstream out(std::cout);
 
 std::string RandomString(const int len)
 {
@@ -41,6 +40,8 @@ void PrintRandomString(ostream& stream)
 
 void Task5::operator()()
 {
+    osyncstream out(std::cout);
+
     auto ThreadsCount = thread::hardware_concurrency();
 
     packaged_task<decltype(PrintRandomString)> task(PrintRandomString);
@@ -53,6 +54,6 @@ void Task5::operator()()
         std::thread(std::ref(task), std::ref(out)).detach();
         task.reset();
     }
-    for (auto& res : results)
+    for (auto& res : results) //
         res.wait();
 }

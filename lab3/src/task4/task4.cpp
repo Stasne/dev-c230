@@ -11,44 +11,65 @@
 #include <syncstream>
 #include <thread>
 #include <vector>
-
-constexpr size_t COUNT{ 50000 };
-using spVec          = std::shared_ptr<std::vector<int>>;
-using promise_vector = std::promise<spVec>;
-using future_vector  = std::shared_future<spVec>;
-void producer(promise_vector& promise, size_t size)
+namespace task4
 {
-    auto vector = std::make_shared<std::vector<int>>(COUNT);
-    std::generate(vector->begin(), vector->end(), utils::rand<int>);
-    promise.set_value(vector);
-}
+    std::osyncstream out(std::cout);
+    constexpr size_t COUNT{ 50000 };
+    struct Buffer
+    {
+        int*   data;
+        size_t size;
+    };
+    using Vec            = Buffer;
+    using promise_vector = std::promise<Vec>;
+    using future_vector  = std::shared_future<Vec>;
+    void producer(promise_vector& promise, size_t size, std::future<void>&& finish)
+    {
+        // dynamic array
+        // auto vector = std::make_shared<std::vector<int>>(COUNT);
+        auto vector = new int[COUNT];
+        std::generate(&vector[0], &vector[COUNT - 1], utils::rand<int>);
+        promise.set_value({ .data = vector, .size = COUNT });
+        out << "w8ing to delete\n";
+        finish.wait();
+        out << "delete vector;\n";
+        delete[] vector;
+        // wait &delete
+    }
 
-void Task4::operator()()
-{
-    promise_vector promise;
-    future_vector  producerF = promise.get_future();
-    std::thread(producer, std::ref(promise), COUNT).detach();
-    auto sum = std::async(
-        std::launch::async, [](auto ft_vec) {
-            auto& vec = ft_vec.get();
-            return std::accumulate(vec->begin(), vec->end(), 0);
-        },
-        producerF);
+    void Task4::operator()()
+    {
+        promise_vector     promise;
+        std::promise<void> finish;
+        auto               fut_finish = finish.get_future();
+        future_vector      producerF  = promise.get_future();
+        std::thread(producer, std::ref(promise), COUNT, std::move(fut_finish)).detach();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        auto sum = std::async(
+            std::launch::async, [](auto ft_vec) {
+                auto& vec = ft_vec.get();
+                return std::accumulate(&vec.data[0], &vec.data[vec.size - 1], 0);
+            },
+            producerF);
 
-    auto min = std::async(
-        std::launch::async, [](auto ft_vec) {
-            auto& vec = ft_vec.get();
-            return *std::min_element(vec->begin(), vec->end());
-        },
-        producerF);
+        auto min = std::async(
+            std::launch::async, [](auto ft_vec) {
+                auto& vec = ft_vec.get();
+                return *std::min_element(&vec.data[0], &vec.data[vec.size - 1]);
+            },
+            producerF);
 
-    auto max = std::async(
-        std::launch::async, [](auto ft_vec) {
-            auto& vec = ft_vec.get();
-            return *std::max_element(vec->begin(), vec->end());
-        },
-        producerF);
-    std::cout << " SUMIS: " << sum.get() << std::endl;
-    std::cout << " MIN: " << min.get() << std::endl;
-    std::cout << " MAX: " << max.get() << std::endl;
+        auto max = std::async(
+            std::launch::async, [](auto ft_vec) {
+                auto& vec = ft_vec.get();
+                return *std::max_element(&vec.data[0], &vec.data[vec.size - 1]);
+            },
+            producerF);
+        out << " SUMIS: " << sum.get() << std::endl;
+        out << " MIN: " << std::dec << min.get() << std::endl;
+        out << " MAX: " << std::dec << max.get() << std::endl;
+        finish.set_value();
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 }
