@@ -18,6 +18,9 @@
 
 using namespace std;
 using Type = char;
+atomic<size_t> readers{ 0 };
+atomic<size_t> writers{ 0 };
+
 void reader(RQueue<Type>& queue, stop_token st)
 {
     try
@@ -26,7 +29,7 @@ void reader(RQueue<Type>& queue, stop_token st)
         {
             std::osyncstream out(std::cout);
             auto             ch = queue.pop();
-            std::this_thread::sleep_for(std::chrono::milliseconds(120));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             out << ch << ' ';
         }
     }
@@ -35,6 +38,7 @@ void reader(RQueue<Type>& queue, stop_token st)
         std::cerr << e.what();
     }
     std::cout << " - reader " << std::this_thread::get_id() << std::endl;
+    --readers;
 }
 void writer(RQueue<Type>& queue, stop_token st)
 {
@@ -51,35 +55,41 @@ void writer(RQueue<Type>& queue, stop_token st)
         std::cerr << e.what();
     }
     std::cout << " - writer " << std::this_thread::get_id() << std::endl;
+    --writers;
 }
 void Task7::operator()()
 {
     cout << "Task 7" << std::endl;
-    RQueue<char>     rqueue(200);
+    RQueue<Type>     rqueue(200);
     std::stop_source ss;
     constexpr size_t ReadersCount{ 3 };
     constexpr size_t WritersCount{ 10 };
     for (size_t i = 0; i < ReadersCount; ++i)
     {
         std::jthread(reader, std::ref(rqueue), ss.get_token()).detach();
+        ++readers;
     }
     for (size_t i = 0; i < WritersCount; ++i)
     {
         std::jthread(writer, std::ref(rqueue), ss.get_token()).detach();
+        ++writers;
     }
-
+    RQueue<Type> sq(0);
     while (true)
     {
         auto c = std::cin.get();
-        if (c == 'c')
+        if (c == 'q') // quit
             break;
-        std::cout << "\nR size: " << rqueue.size() << '\n';
+        if (c == 'w') // switch queue with empty
+            sq = std::move(rqueue);
+        if (c == 'r') // threads status
+        {
+            std::cout << "Reader threads: " << readers.load() << '\n';
+            std::cout << "Writer threads: " << writers.load() << '\n';
+        }
+        std::cout << "\nR storage: " << std::dec << rqueue.size() << "/" << rqueue.capacity() << '\n';
     }
-    // std::this_thread::sleep_for(std::chrono::seconds(1));
-    // std::cout << "\nR size: " << rqueue.size() << '\n';
-    // std::this_thread::sleep_for(std::chrono::seconds(1));
-    // std::cout << "\nR size: " << rqueue.size() << '\n';
-    // std::this_thread::sleep_for(std::chrono::seconds(1));
+
     ss.request_stop();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
