@@ -25,16 +25,11 @@ namespace task4
     using future_vector  = std::shared_future<Vec>;
     void producer(promise_vector& promise, size_t size, std::future<void>&& finish)
     {
-        // dynamic array
-        // auto vector = std::make_shared<std::vector<int>>(COUNT);
         auto vector = new int[COUNT];
         std::generate(&vector[0], &vector[COUNT - 1], utils::rand<int>);
         promise.set_value({ .data = vector, .size = COUNT });
-        out << "w8ing to delete\n";
         finish.wait();
-        out << "delete vector;\n";
         delete[] vector;
-        // wait &delete
     }
 
     void Task4::operator()()

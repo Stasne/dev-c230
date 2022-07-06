@@ -19,6 +19,7 @@ void ThreadPool::poller()
 {
     thread_local size_t counter = 0;
     auto                st      = ss_.get_token();
+    // while (not ss_.stop_requested()) //works bad
     while (not st.stop_requested())
     {
         std::unique_lock<std::mutex> lk(m_queue_);
@@ -32,6 +33,7 @@ void ThreadPool::poller()
             lk.lock();
         }
         cv_.wait(lk, [&] {
+            // return (!tasks_.empty() || ss_.stop_requested()); // works bad
             return (!tasks_.empty() || st.stop_requested());
         });
     }
