@@ -28,13 +28,13 @@ void Task1::operator()()
         for (const auto& w : words)
         {
             if (w.starts_with(c) or w.starts_with(std::toupper(c)))
-            {
                 ++counts[c];
-            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         finish.count_down();
     };
+
     for (char c = 'a'; c <= 'z'; ++c)
         std::thread(countStartLetters, c).detach();
     std::cout << "w8ing till finish\n";
