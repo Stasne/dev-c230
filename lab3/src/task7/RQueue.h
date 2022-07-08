@@ -9,14 +9,19 @@ class RQueue
 {
 public:
     RQueue(const size_t size)
-        : capacity_(size) // > 2 ? size : 2)
+        : capacity_(size)
         , size_(0)
         , head_(0)
         , tail_(0)
         , data_(std::make_unique<T[]>(capacity_))
     {
     }
-    ~RQueue() {} // TODO: implement somehow
+    ~RQueue()
+    {
+        stopRequested_.test_and_set();
+        readyPop_.notify_all();
+        readyPush_.notify_all();
+    }
     RQueue(RQueue&& other)
     {
         std::unique_lock<std::mutex> rlk(other.mPop_, std::defer_lock);
@@ -36,14 +41,16 @@ public:
     {
         std::unique_lock<std::mutex> rlk(other.mPop_, std::defer_lock);
         std::unique_lock<std::mutex> wlk(other.mPush_, std::defer_lock);
-        std::lock(rlk, wlk);
+        std::unique_lock<std::mutex> mrlk(mPop_, std::defer_lock);
+        std::unique_lock<std::mutex> mwlk(mPush_, std::defer_lock);
+        std::lock(rlk, wlk, mwlk, mrlk);
         swap(*this, other);
         return *this;
     }
-    [[nodiscard]] T pop() // bool pop(T& val) ?
+    [[nodiscard]] T pop()
     {
         std::unique_lock<std::mutex> lock(mPop_);
-        if (not readyPop_.wait_for(lock, std::chrono::milliseconds(PopTimeout_ms), [&] { return size_.load(); }))
+        if (not readyPop_.wait_for(lock, std::chrono::milliseconds(PopTimeout_ms), [&] { return (size_.load()) and (not stopRequested_.test()); }))
             throw std::runtime_error("No writers");
 
         auto val = std::move(data_[tail_]);
@@ -52,10 +59,10 @@ public:
         tail_ = (tail_ + 1) % capacity_;
         return val;
     };
-    void push(T val) // bool push(T val)?
+    void push(T val)
     {
         std::unique_lock<std::mutex> lock(mPush_);
-        if (not readyPush_.wait_for(lock, std::chrono::milliseconds(PushTimeout_ms), [&] { return size_.load() != capacity_; }))
+        if (not readyPush_.wait_for(lock, std::chrono::milliseconds(PushTimeout_ms), [&] { return (size_.load() != capacity_) and (not stopRequested_.test()); }))
             throw std::runtime_error("No space/readers");
 
         data_[head_] = std::move(val);
@@ -70,11 +77,11 @@ public:
 private:
     static constexpr size_t PopTimeout_ms{ 50 };
     static constexpr size_t PushTimeout_ms{ 50 };
-    std::atomic<size_t>     size_;
-    size_t                  capacity_;
-    std::atomic<size_t>     head_, tail_;
+    std::atomic<size_t>     size_{};
+    size_t                  capacity_{};
+    std::atomic<size_t>     head_{}, tail_{};
     std::unique_ptr<T[]>    data_;
-
+    std::atomic_flag        stopRequested_;
     std::condition_variable readyPop_, readyPush_;
     std::mutex              mPop_, mPush_;
 };
