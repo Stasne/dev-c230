@@ -13,7 +13,18 @@
 #include <vector>
 
 #include "SpinMutex.h"
+template <typename T>
+class Aatomic
+{
+public:
+    Aatomic() { ++cnt_; }
+    ~Aatomic() { --cnt_; }
+    size_t count() const { return cnt_.load(); }
 
+private:
+    T                                 data_;
+    inline static std::atomic<size_t> cnt_;
+};
 template <typename T, typename Mut>
 class Alock
 {
@@ -42,13 +53,13 @@ void Task3::operator()()
         auto spv = new decltype(val)();
         // std::this_thread::sleep_for(std::chrono::milliseconds(20));
     };
-    constexpr size_t               Count = 132056;
+    constexpr size_t               Count = 13256;
     std::vector<std::future<void>> ftrs;
     ftrs.reserve(Count);
     using MutexType = SpinMutex;
     Alock<int, MutexType> tester;
 
-    auto SpinTest = [&](auto mutex) {
+    auto LockTest = [&](auto mutex) {
         for (size_t i = 0; i < Count; ++i)
             // if (i % 2)
             ftrs.emplace_back(std::async(std::launch::async, [&] { createSome(Alock<int, decltype(mutex)>()); }));
@@ -57,10 +68,21 @@ void Task3::operator()()
         for (auto& f : ftrs)
             f.get();
     };
+    auto AtomicTest = [&] {
+        for (size_t i = 0; i < Count; ++i)
+            ftrs.emplace_back(std::async(std::launch::async, [&] { createSome(Aatomic<int>()); }));
 
-    utils::time([&] { SpinTest(std::mutex()); });
+        for (auto& f : ftrs)
+            f.get();
+    };
+
+    utils::time([&] { LockTest(std::mutex()); });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     ftrs.clear();
-    utils::time([&] { SpinTest(SpinMutex()); });
+    utils::time([&] { LockTest(SpinMutex()); });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    ftrs.clear();
+    utils::time(AtomicTest);
 }
