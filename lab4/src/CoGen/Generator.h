@@ -56,11 +56,6 @@ public:
             std::cout << __FUNCTION__ << "\n";
             exit(1);
         }
-        // auto return_value(const T value)
-        // {
-        //     std::cout << __FUNCTION__ << "\n";
-        //     value_ = std::move(value);
-        // }
         void return_void() { std::cout << __FUNCTION__ << "\n"; }
         auto yield_value(const T value)
         {

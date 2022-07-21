@@ -21,17 +21,10 @@ void CoroTask::operator()()
 {
 
     constexpr size_t Count{ 50000 };
-    auto             gen = coIntGen(1, 7);
+    auto             gen = coIntGen(1, 1);
     std::cout << "CoroTask" << std::endl;
     for (auto el : gen)
     {
         std::cout << " " << el; // std::endl;
     }
-
-    // std::cout << "pre loop ___________________\n";
-    // for (size_t i = 0; i < 4; ++i)
-    // {
-    //     gen.next();
-    //     std::cout << " " << gen.getValue().value() << std::endl;
-    // }
 }
